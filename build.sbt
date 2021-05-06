@@ -18,8 +18,10 @@ inThisBuild {
       "2.13.2",
       "2.13.3",
       "2.13.4",
-      "2.13.5"
+      "2.13.5",
+      "2.13.6-bin-SNAPSHOT",
     ),
+    scalaVersion := crossScalaVersions.value.last,
     organization := "org.typelevel",
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     homepage := Some(url("http://github.com/typelevel/kind-projector")),
@@ -63,7 +65,7 @@ inThisBuild {
 
 val HasScalaVersion = {
   object Matcher {
-    def unapply(versionString: String) = 
+    def unapply(versionString: String) =
       versionString.takeWhile(ch => ch != '-').split('.').toList.map(str => scala.util.Try(str.toInt).toOption) match {
         case List(Some(epoch), Some(major), Some(minor)) => Some((epoch, major, minor))
         case _ => None
@@ -127,7 +129,7 @@ lazy val `kind-projector` = project
     Test / scalacOptions ++= (scalaVersion.value match {
       case HasScalaVersion(2, 13, n) if n >= 2 => List("-Wconf:src=WarningSuppression.scala:error")
       case _                                   => Nil
-    }),
+    }) ++ List("-P:kind-projector:underscore-type-lambdas"),
     console / initialCommands := "import d_m._",
     Compile / console / scalacOptions := Seq("-language:_", "-Xplugin:" + (Compile / packageBin).value),
     Test / console / scalacOptions := (Compile / console / scalacOptions).value,
