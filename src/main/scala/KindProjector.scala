@@ -384,7 +384,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
           if (nonUnderscoreExistentials.isEmpty) nt else ExistentialTypeTree(nt, nonUnderscoreExistentials)
 
         // Either[?, Int] case (if no ? present this is a noop)
-        case AppliedTypeTree(t, as)  =>
+        case AppliedTypeTree(t, as) =>
           atPos(tree.pos.makeTransparent)(handlePlaceholders(t, as))
 
         // Otherwise, carry on as normal.
