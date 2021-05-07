@@ -224,7 +224,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
       // Builds the horrendous type projection tree. To remind the reader,
       // given List("A", "B") and <(A, Int, B)> we are generating a tree for
       // ({ type L[A, B] = (A, Int, B) })#L.
-      def makeTypeProjection(innerTypes: List[TypeDef], subtree: Tree): Tree = {
+      def makeTypeProjection(innerTypes: List[TypeDef], subtree: Tree): Tree =
         SelectFromTypeTree(
           CompoundTypeTree(
             Template(
@@ -236,7 +236,6 @@ class KindRewriter(plugin: Plugin, val global: Global)
                 innerTypes,
                 super.transform(subtree)) :: Nil)),
           LambdaName)
-      }
 
       // This method handles the explicit type lambda case, e.g.
       // Lambda[(A, B) => Function2[A, Int, B]] case.
