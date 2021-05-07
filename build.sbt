@@ -86,7 +86,7 @@ def hasNewParser(versionString: String) = versionString match {
   case _ => false
 }
 
-def hasPluginOptions(versionString: String) = versionString match {
+def hasNewPlugin(versionString: String) = versionString match {
   case HasScalaVersion(2, 10, _) => false
   case _ => true
 }
@@ -107,7 +107,7 @@ lazy val `kind-projector` = project
         val suffices =
           (if (hasNewParser(sv)) "-newParser" else "-oldParser") ::
           (if (hasNewReporting(sv)) "-newReporting" else "-oldReporting") ::
-          (if (hasPluginOptions(sv)) "-pluginOptions" else "-noPluginOptions") ::
+          (if (hasNewPlugin(sv)) "-newPlugin" else "-oldPlugin") ::
           Nil
         suffices.map(suffix => file(dir.getPath + suffix))
       }
