@@ -64,14 +64,14 @@ object Test {
   // covariant
   def mux[T[+_]] = ()
   mux[({type L[+A] = Either[A, Int]})#L]
-  mux[Either[+_, Int]]
+  mux[Either[`+_`, Int]]
   mux[Lambda[`+A` => Either[A, Int]]]
   mux[Lambda[+[A] => Either[A, Int]]]
 
   // contravariant
   def bux[T[-_, +_]] = ()
   bux[({type L[-A, +B] = Function2[A, Int, B]})#L]
-  bux[Function2[-_, Int, +_]]
+  bux[Function2[`-_`, Int, `+_`]]
   bux[Lambda[(`-A`, `+B`) => Function2[A, Int, B]]]
   bux[Lambda[(-[A], +[B]) => Function2[A, Int, B]]]
 
@@ -79,8 +79,8 @@ object Test {
   trait ~>[-F[_], +G[_]]
   def tux[T[-F[_]]] = ()
   def hux[T[+G[_]]] = ()
-  tux[~>[-_[_], Option]]
-  hux[~>[Option, +_[_]]]
+  tux[~>[`-_`[_], Option]]
+  hux[~>[Option, `+_`[_]]]
   tux[Lambda[`-F[_]` => ~>[F, Option]]]
   hux[Lambda[`+G[_]` => ~>[Option, G]]]
 }
