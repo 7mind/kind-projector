@@ -17,13 +17,13 @@ class KindProjector(val global: Global) extends Plugin {
   val description = "Expand type lambda syntax"
 
   override val optionsHelp = Some(Seq(
-    "-P:kind-projector:underscore-type-lambdas - treat underscore as a type lambda placeholder,",
+    "-P:kind-projector:underscore-placeholders - treat underscore as a type lambda placeholder,",
     "disables Scala 2 wildcards, you must separately enable `-Xsource:3` option to be able to",
     "write wildcards using `?` symbol").mkString(" "))
 
   override def init(options: List[String], error: String => Unit): Boolean = {
-    if (options.exists(_!="underscore-type-lambdas")) {
-      error(s"Error: $name takes no options except `-P:kind-projector:underscore-type-lambdas`, but got ${options.mkString(",")}")
+    if (options.exists(_!="underscore-placeholders")) {
+      error(s"Error: $name takes no options except `-P:kind-projector:underscore-placeholders`, but got ${options.mkString(",")}")
     }
     true
   }
@@ -46,7 +46,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
     System.getProperty("kp:genAsciiNames") == "true"
 
   val useUnderscoresForTypeLambda: Boolean = {
-    plugin.options.contains("underscore-type-lambdas")
+    plugin.options.contains("underscore-placeholders")
   }
 
   def newTransformer(unit: CompilationUnit): MyTransformer =
@@ -221,7 +221,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
       // ({ type L[A, B] = (A, Int, B) })#L.
       def makeTypeProjection(x: Tree, innerTypes: List[TypeDef], subtree: Tree): Tree = {
         val tree1 = super.transform(subtree)
-        //reporter.echo( s"Got inner subtree:\n${tree1}")
+        reporter.echo( s"Got inner subtree:\n${tree1}")
         SelectFromTypeTree(
           CompoundTypeTree(
             Template(
@@ -276,24 +276,23 @@ class KindRewriter(plugin: Plugin, val global: Global)
             (Ident(newParamName(i)), Some(Left((variance, ps.map(makeComplexTypeParam)))))
           case (ExistentialTypeTree(AppliedTypeTree(Ident(Placeholder(variance)), ps), _), i) =>
             (Ident(newParamName(i)), Some(Left((variance, ps.map(makeComplexTypeParam)))))
-          case (Ident(x), i) if existentials(x) =>
-//            //reporter.echo(t.pos, x.toString())
+          case (y@Ident(x), i) if existentials(x) =>
             (Ident(newParamName(i)), Some(Right(Invariant)))
           case (AppliedTypeTree(Ident(x), ps), i)  if existentials(x) =>
-//            //reporter.echo(t.pos, x.toString())
+//            reporter.echo(t.pos, x.toString())
             (Ident(newParamName(i)), Some(Left((Invariant, ps.map(makeComplexTypeParam)))))
           case (ExistentialTypeTree(AppliedTypeTree(Ident(x), ps), _), i)if existentials(x)  =>
-//            //reporter.echo(t.pos, x.toString())
+//            reporter.echo(t.pos, x.toString())
             (Ident(newParamName(i)), Some(Left((Invariant, ps.map(makeComplexTypeParam)))))
           case (a, i) =>
-            //reporter.echo(msg =
-//              s"""for $t Transforming{
-//                |  arg=$a""".stripMargin)
+            reporter.echo(msg =
+              s"""for $t Transforming{
+                |  arg=$a""".stripMargin)
             val tree1 = transform(a)
-            //reporter.echo(
-//              s"""for $t Transformed
-//                |  arg=$a
-//                |  res=$tree1""".stripMargin)
+            reporter.echo(
+              s"""for $t Transformed
+                |  arg=$a
+                |  res=$tree1""".stripMargin)
             (tree1, None)
         }
 
@@ -308,7 +307,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
 
         val args = xyz.map(_._1)
 
-        //reporter.echo(s"""for $t mkLambda
+        reporter.echo(s"""for $t mkLambda
 //          |  xyz=$args
 //          |  innerTypes=${innerTypes}""")
 
@@ -317,7 +316,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
         val res = if (innerTypes.isEmpty) super.transform(tree)
         else makeTypeProjection(t, innerTypes, AppliedTypeTree(t, args))
 
-        //reporter.echo(s"""for $t lambdaRes
+        reporter.echo(s"""for $t lambdaRes
 //          |  res=$res""")
         res
       }
@@ -376,7 +375,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
       // given a tree, see if it could possibly be a type lambda
       // (either placeholder syntax or lambda syntax). if so, handle
       // it, and if not, transform it in the normal way.
-      //reporter.echo(s"Matching $tree")
+      reporter.echo(s"Matching $tree")
       val result = polyLambda(tree match {
 
         // Lambda[A => Either[A, Int]] case.
@@ -390,23 +389,25 @@ class KindRewriter(plugin: Plugin, val global: Global)
 //        case ExistentialTypeTree(AppliedTypeTree(Ident(InvPlaceholderScala3()), as), params) /*if useUnderscoresForTypeLambda */=>
 //          super.transform(tree)
 
-        case /*ot @*/ ExistentialTypeTree(AppliedTypeTree(t, as), params) if useUnderscoresForTypeLambda =>
-          //reporter.echo(s"start ${showCode(ot)}<=>${params.toString}")
+        case ot @ ExistentialTypeTree(AppliedTypeTree(t, as), params) if useUnderscoresForTypeLambda =>
+          reporter.echo(s"start ${showCode(ot)}<=>${params.toString}")
   //          super.transform(ot)
   //
           val nonUnderscoreExistentials = params.filterNot(p => InvPlaceholderScala3(p.name))
+//          val (underscores, nonUnderscoreExistentials) = params.partition(p => InvPlaceholderScala3(p.name))
           val nt = atPos(tree.pos.makeTransparent)(handlePlaceholders(t, as, InvPlaceholderScala3(_)))
-  //          if (nonUnderscoreExistentials.isEmpty) ot else ot// ExistentialTypeTree(nt, nonUnderscoreExistentials)
+//          val nt = atPos(tree.pos.makeTransparent)(handlePlaceholders(t, as, underscores.map(_.name).contains(_)))
           val res= if (nonUnderscoreExistentials.isEmpty) nt else ExistentialTypeTree(nt, nonUnderscoreExistentials)
-          //reporter.echo(s"existential tree ${showCode(ot)}<=>${params.toString} =>> ${showCode(res)}")
+          reporter.echo(s"existential tree ${showCode(ot)}<=>${params.toString} =>> ${showCode(res)}")
 //          val _ =res;nt
           res
 
         // Either[?, Int] case (if no ? present this is a noop)
-        case/* ot@*/ AppliedTypeTree(t, as) /*if !useUnderscoresForTypeLambda*/ =>
-          //reporter.echo(s" start applied tree ${showCode(ot)}<=>${as.toString}")
-          val res= atPos(tree.pos.makeTransparent)(handlePlaceholders(t, as, InvPlaceholderScala3(_)))
-          //reporter.echo(s" end applied tree ${showCode(ot)}<=>${as.toString} =>> ${showCode(res)}")
+        case ot@ AppliedTypeTree(t, as) /*if !useUnderscoresForTypeLambda*/ =>
+          reporter.echo(s" start applied tree ${showCode(ot)}<=>${as.toString}")
+          val res = atPos(tree.pos.makeTransparent)(handlePlaceholders(t, as, InvPlaceholderScala3(_)))
+//          val res = atPos(tree.pos.makeTransparent)(handlePlaceholders(t, as, _ => false))
+          reporter.echo(s" end applied tree ${showCode(ot)}<=>${as.toString} =>> ${showCode(res)}")
           res
 
         // Otherwise, carry on as normal.

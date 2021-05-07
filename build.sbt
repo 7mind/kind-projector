@@ -129,7 +129,7 @@ lazy val `kind-projector` = project
     Test / scalacOptions ++= (scalaVersion.value match {
       case HasScalaVersion(2, 13, n) if n >= 2 => List("-Wconf:src=WarningSuppression.scala:error")
       case _                                   => Nil
-    }) ++ List("-P:kind-projector:underscore-type-lambdas"),
+    }) ++ List("-P:kind-projector:underscore-placeholders"),
     console / initialCommands := "import d_m._",
     Compile / console / scalacOptions := Seq("-language:_", "-Xplugin:" + (Compile / packageBin).value),
     Test / console / scalacOptions := (Compile / console / scalacOptions).value,
