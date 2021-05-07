@@ -32,7 +32,7 @@ class KindProjector(val global: Global) extends Plugin {
 }
 
 class KindRewriter(plugin: Plugin, val global: Global)
-    extends PluginComponent with Transform with TypingTransformers with TreeDSL with ReportingCompat {
+    extends PluginComponent with Transform with TypingTransformers with TreeDSL with PluginOptionsCompat with ReportingCompat {
 
   import global._
 
@@ -46,7 +46,7 @@ class KindRewriter(plugin: Plugin, val global: Global)
     System.getProperty("kp:genAsciiNames") == "true"
 
   val useUnderscoresForTypeLambda: Boolean = {
-    plugin.options.contains("underscore-placeholders")
+    pluginOptions(plugin).contains("underscore-placeholders")
   }
 
   def newTransformer(unit: CompilationUnit): MyTransformer =
@@ -288,12 +288,12 @@ class KindRewriter(plugin: Plugin, val global: Global)
             reporter.echo(msg =
               s"""for $t Transforming{
                 |  arg=$a""".stripMargin)
-            val tree1 = transform(a)
+            val transformedA = if (useUnderscoresForTypeLambda) transform(a) else super.transform(a)
             reporter.echo(
               s"""for $t Transformed
                 |  arg=$a
-                |  res=$tree1""".stripMargin)
-            (tree1, None)
+                |  res=$transformedA""".stripMargin)
+            (transformedA, None)
         }
 
 
